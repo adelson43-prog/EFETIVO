@@ -138,11 +138,11 @@ td.ok{color:var(--ok);font-weight:600} td.nok{color:var(--nok);font-weight:600}
 <input type="file" id="arqInput" accept=".xlsx,.xlsm,.xls,.json,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden>
 <header><div class="wrap">
   <div class="toprow">
-    <h1><small>Manufatura · Personnel</small>Conferência de Efetivo</h1>
+    <h1><small>Manufatura · Turno A</small>Conferência de Efetivo</h1>
     <input type="date" id="dia" aria-label="Data da conferência">
   </div>
   <div class="chips" id="fSetor" role="group" aria-label="Setor"></div>
-  <div class="chips" id="fTurno" role="group" aria-label="Turno"></div>
+  <div class="chips" id="fTurno" role="group" aria-label="Turno" hidden></div>
   <div class="tally" aria-live="polite">
     <div class="t ok">OK <b id="nOk">0</b></div>
     <div class="t nok">NOK <b id="nNok">0</b></div>
@@ -173,6 +173,7 @@ td.ok{color:var(--ok);font-weight:600} td.nok{color:var(--nok);font-weight:600}
 (function(){
 const SETORES=["Moldagem","Offset","Blow Molding","Sorter"];
 const TURNOS=["A/D","B/E","C/F","ADM"];
+const TURNO_FIXO="A/D"; /* líder do Turno A: só considera o turno A/D */
 const FUNCOES=["Líder","Auxiliar Operacional","Scrap man","Abastecimento","Conferência Scrap","Balança / Transf. Sorter","Operador","Embalador","Supervisor","Administrativo","Afastado"];
 const MOTIVOS=["Falta","Atestado","Atraso","Férias","Afastado","Outro setor","Outro"];
 const $=s=>document.querySelector(s);
@@ -181,13 +182,14 @@ const hoje=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffs
 const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 
 let db=null, downloads=null, base=null, baseLoaded=false, dayData={}, dayExists=false, dayUnsub=null;
-let fSetor=ls.get("cp_setor","Moldagem"), fTurno=ls.get("cp_turno","Todos"), q="", tab="conf", openReason=null, confirmAll=false, pq="";
+let fSetor=ls.get("cp_setor","Moldagem"), fTurno="Todos", q="", tab="conf", openReason=null, confirmAll=false, pq="";
 let writeChain=Promise.resolve(), readOnly=false;
 const dia=$("#dia"); dia.value=hoje();
 
 function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>el.hidden=true,2200)}
 
-function pessoas(){return base?Object.values(base.pessoas||{}).filter(p=>p&&p.ativo!==false):[]}
+const doTurno=p=>!TURNO_FIXO||p.turno===TURNO_FIXO;
+function pessoas(){return base?Object.values(base.pessoas||{}).filter(p=>p&&p.ativo!==false&&doTurno(p)):[]}
 function filtradas(){
   const qq=q.trim().toLowerCase();
   return pessoas().filter(p=>(fSetor==="Todos"||p.setor===fSetor)&&(fTurno==="Todos"||p.turno===fTurno)&&(!qq||p.nome.toLowerCase().includes(qq)||String(p.mat).includes(qq)))
@@ -256,11 +258,11 @@ function nokList(){return pessoas().filter(p=>mark(p.mat)?.s==="NOK").sort((a,b)
 function motivos(noks){const o={};noks.forEach(p=>{const k=mark(p.mat).mo||"Sem motivo";o[k]=(o[k]||0)+1});return Object.entries(o).sort((a,b)=>b[1]-a[1])}
 function textoResumo(){
   const all=contar(pessoas()), noks=nokList();
-  let t=`*Relatório de efetivo — ${dataBR(dia.value)}*\n`;
+  let t=`*Relatório de efetivo — Turno A — ${dataBR(dia.value)}*\n`;
   t+=`Conferido: ${pct(all.ok+all.nok,all.t)} (${all.ok+all.nok}/${all.t})\nPresença: ${all.ok+all.nok?pct(all.ok,all.ok+all.nok):"–"} · ${all.ok} OK · ${all.nok} NOK\n`;
   statsSetor().forEach(({s,c,turnos})=>{
     t+=`\n*${s}* — ${c.ok+c.nok?pct(c.ok,c.ok+c.nok):"–"} presença · ${c.ok} OK · ${c.nok} NOK${c.pend?` · ${c.pend} sem marcar`:""}`;
-    turnos.forEach(({tu,c:k})=>{t+=`\n  Turno ${tu}: ${k.ok}/${k.t} OK (${pct(k.ok,k.t)})${k.nok?` · ${k.nok} NOK`:""}`});
+    if(!TURNO_FIXO) turnos.forEach(({tu,c:k})=>{t+=`\n  Turno ${tu}: ${k.ok}/${k.t} OK (${pct(k.ok,k.t)})${k.nok?` · ${k.nok} NOK`:""}`});
   });
   if(noks.length){
     t+=`\n\n*Motivos:* ${motivos(noks).map(([k,n])=>`${k} ${n}`).join(" · ")}\n\n*NOK do dia*`;
@@ -275,12 +277,12 @@ function renderRes(){
   let rows="";
   st.forEach(({s,c,turnos})=>{
     rows+=`<tr class="sub"><td>${esc(s)}</td><td>${c.t}</td><td class="ok">${c.ok}</td><td class="nok">${c.nok}</td><td>${c.pend}</td><td>${pct(c.ok+c.nok,c.t)}</td><td>${c.ok+c.nok?pct(c.ok,c.ok+c.nok):"–"}</td></tr>`;
-    turnos.forEach(({tu,c:k})=>{rows+=`<tr><td>Turno ${tu}</td><td>${k.t}</td><td class="ok">${k.ok}</td><td class="nok">${k.nok}</td><td>${k.pend}</td><td class="pctc">${pct(k.ok+k.nok,k.t)}</td><td class="pctc">${k.ok+k.nok?pct(k.ok,k.ok+k.nok):"–"}</td></tr>`});
+    if(!TURNO_FIXO) turnos.forEach(({tu,c:k})=>{rows+=`<tr><td>Turno ${tu}</td><td>${k.t}</td><td class="ok">${k.ok}</td><td class="nok">${k.nok}</td><td>${k.pend}</td><td class="pctc">${pct(k.ok+k.nok,k.t)}</td><td class="pctc">${k.ok+k.nok?pct(k.ok,k.ok+k.nok):"–"}</td></tr>`});
   });
   rows+=`<tr class="sub"><td>Total</td><td>${all.t}</td><td class="ok">${all.ok}</td><td class="nok">${all.nok}</td><td>${all.pend}</td><td>${pct(all.ok+all.nok,all.t)}</td><td>${all.ok+all.nok?pct(all.ok,all.ok+all.nok):"–"}</td></tr>`;
   const pubTxt=pub&&pub.em?`Fechado ${new Date(pub.em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`:"Em aberto";
   let h=`<div class="rep">
-    <div class="rep-head"><div><h2>Relatório de efetivo</h2><p>${dataBR(dia.value)} · Moldagem, Offset, Blow Molding e Sorter</p></div><span class="status${pub?" pub":""}">${pubTxt}</span></div>
+    <div class="rep-head"><div><h2>Relatório de efetivo · Turno A</h2><p>${dataBR(dia.value)} · Moldagem, Offset, Blow Molding e Sorter</p></div><span class="status${pub?" pub":""}">${pubTxt}</span></div>
     <div class="kpis">
       <div class="kpi"><span>Conferido</span><b>${pct(all.ok+all.nok,all.t)}</b><small>${all.ok+all.nok} de ${all.t} pessoas</small></div>
       <div class="kpi"><span>Presença</span><b style="color:var(--ok)">${all.ok+all.nok?pct(all.ok,all.ok+all.nok):"–"}</b><small>${all.ok} OK · ${all.nok} NOK</small></div>
@@ -290,7 +292,7 @@ function renderRes(){
   </div>`;
   h+=`<div class="actions">${readOnly?"":`<button class="btn primary" id="publicar">${pub?"Atualizar fechamento":"Fechar relatório do dia"}</button>`}<button class="btn" id="copiar">Enviar texto (WhatsApp)</button><button class="btn" id="png">Enviar imagem</button><button class="btn" id="csv">Baixar CSV</button></div>`;
   if(all.pend) h+=`<div class="note">Ainda faltam ${all.pend} pessoas sem marcação. Dá para fechar assim mesmo e atualizar depois.</div>`;
-  h+=`<div class="tablebox"><table><thead><tr><th>Setor / turno</th><th>Pessoas</th><th>OK</th><th>NOK</th><th>Faltam</th><th>% Conf.</th><th>% Pres.</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  h+=`<div class="tablebox"><table><thead><tr><th>Setor</th><th>Pessoas</th><th>OK</th><th>NOK</th><th>Faltam</th><th>% Conf.</th><th>% Pres.</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   h+=`<div class="group"><h2>NOK do dia<span>${noks.length}</span></h2>`;
   h+= noks.length?`<div class="list">${noks.map(p=>{const m=mark(p.mat);return `<div class="row s-NOK"><div class="who"><div class="name">${esc(p.nome)}</div><div class="meta"><span class="mat">${esc(p.mat)}</span><span>${esc(p.setor)} · ${esc(p.turno)}</span><span class="tag mo">${esc(m.mo||"Sem motivo")}</span>${m.ob?`<span>${esc(m.ob)}</span>`:""}</div></div></div>`}).join("")}</div>`:`<div class="empty">Nenhum NOK marcado neste dia.</div>`;
   h+=`</div><textarea id="resumoTxt" readonly hidden></textarea>`;
@@ -319,8 +321,8 @@ async function gerarPNG(){
   x.fillStyle=C.bg;x.fillRect(0,0,W,H);
   x.fillStyle=C.acc;x.fillRect(0,0,W,10);
   let y=pad+20;
-  x.fillStyle=C.mu;x.font="600 24px Barlow, sans-serif";x.fillText("MANUFATURA · PERSONNEL",pad,y);
-  y+=56;x.fillStyle=C.fg;x.font="700 56px 'Barlow Condensed', sans-serif";x.fillText("Relatório de efetivo — "+dataBR(dia.value),pad,y);
+  x.fillStyle=C.mu;x.font="600 24px Barlow, sans-serif";x.fillText("MANUFATURA · TURNO A",pad,y);
+  y+=56;x.fillStyle=C.fg;x.font="700 56px 'Barlow Condensed', sans-serif";x.fillText("Efetivo Turno A — "+dataBR(dia.value),pad,y);
   y+=36;
   const kpi=(kx,label,val,sub,col)=>{x.fillStyle=C.soft;x.fillRect(kx,y,(W-pad*2-24)/2,140);x.fillStyle=C.mu;x.font="600 22px Barlow, sans-serif";x.fillText(label,kx+24,y+40);x.fillStyle=col;x.font="700 64px 'Barlow Condensed', sans-serif";x.fillText(val,kx+24,y+104);x.fillStyle=C.mu;x.font="500 22px Barlow, sans-serif";x.fillText(sub,kx+24,y+130)};
   kpi(pad,"CONFERIDO",pct(all.ok+all.nok,all.t),`${all.ok+all.nok} de ${all.t} pessoas`,C.fg);
@@ -343,13 +345,13 @@ async function gerarPNG(){
     if(noks.length>30){y+=40;x.fillStyle=C.mu;x.font="500 20px Barlow, sans-serif";x.fillText(`+ ${noks.length-30} no relatório completo`,pad,y)}
   } else {y+=10;x.fillStyle=C.ok;x.font="600 26px Barlow, sans-serif";x.fillText("Nenhum NOK marcado.",pad,y)}
   const blob=await new Promise(r=>cv.toBlob(r,"image/png"));
-  await compartilharArquivo(blob,`relatorio_efetivo_${dia.value}.png`,"Relatório de efetivo "+dataBR(dia.value));
+  await compartilharArquivo(blob,`relatorio_efetivo_${dia.value}.png`,"Efetivo Turno A "+dataBR(dia.value));
 }
 
 function renderPes(){
   const v=$("#vPes");
   const qq=pq.trim().toLowerCase();
-  const all=base?Object.values(base.pessoas||{}).filter(Boolean):[];
+  const all=base?Object.values(base.pessoas||{}).filter(p=>p&&doTurno(p)):[];
   const l=all.filter(p=>(fSetor==="Todos"||p.setor===fSetor)&&(fTurno==="Todos"||p.turno===fTurno)&&(!qq||p.nome.toLowerCase().includes(qq)||String(p.mat).includes(qq))).sort((a,b)=>a.nome.localeCompare(b.nome,"pt"));
   let h=`<div class="search"><input id="pbusca" type="search" placeholder="Buscar na base" value="${esc(pq)}" autocomplete="off">${readOnly?"":'<button class="btn primary" id="novo">+ Pessoa</button>'}</div>
   <div class="note">${all.filter(p=>p.ativo!==false).length} pessoas ativas${base&&base.importado?` · Personnel importado em ${new Date(base.importado).toLocaleDateString("pt-BR")}`:""}. Toque em alguém para editar setor, turno, função ou situação.</div>
@@ -429,7 +431,7 @@ async function baixarCSV(){
 /* ---------- cadastro ---------- */
 let editMat=null;
 function editar(mat){
-  editMat=mat; const p=mat?base.pessoas[mat]:{mat:"",nome:"",setor:fSetor==="Todos"?"Moldagem":fSetor,turno:fTurno==="Todos"?"A/D":fTurno,funcao:"Operador",tipo:"Efetivo",pcd:false,ferias:false,afastado:false,codigos:[],ativo:true};
+  editMat=mat; const p=mat?base.pessoas[mat]:{mat:"",nome:"",setor:fSetor==="Todos"?"Moldagem":fSetor,turno:TURNO_FIXO||"A/D",funcao:"Operador",tipo:"Efetivo",pcd:false,ferias:false,afastado:false,codigos:[],ativo:true};
   const opt=(arr,v)=>arr.map(x=>`<option${x===v?" selected":""}>${esc(x)}</option>`).join("");
   $("#sheet").innerHTML=`<div class="panel" role="dialog" aria-modal="true" aria-label="Pessoa"><h3>${mat?"Editar pessoa":"Nova pessoa"}</h3>
   <div class="form">
@@ -512,7 +514,7 @@ async function importarPlanilha(file){
     const manuais=Object.values((base&&base.pessoas)||{}).filter(p=>p&&p.manual&&!r.pessoas[p.mat]);
     manuais.forEach(p=>r.pessoas[p.mat]=p);
     await LocalDB.doc("config/base").set({pessoas:r.pessoas,importado:now(),arquivo:file.name});
-    toast(n+" pessoas importadas"+(r.faltando.length?" (sem aba "+r.faltando.join(", ")+")":""));
+    toast(Object.values(r.pessoas).filter(doTurno).length+" pessoas do Turno A importadas"+(r.faltando.length?" (sem aba "+r.faltando.join(", ")+")":""));
   }catch(e){toast(e&&e.message?e.message:"Não consegui ler o arquivo")}
 }
 function backup(){
