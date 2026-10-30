@@ -1,0 +1,31 @@
+CONFERÊNCIA DE EFETIVO — versão para iPhone (sem conta do Claude)
+
+Arquivos desta pasta (suba TODOS juntos):
+  index.html, parser.js, xlsx.full.min.js, sw.js, manifest.webmanifest, icon-180.png, icon-192.png, icon-512.png
+
+Nenhum nome ou matrícula vai nestes arquivos. A base é importada no próprio iPhone e fica só nele.
+
+1) PUBLICAR NO GITHUB PAGES (uma vez, pelo computador)
+  - Crie uma conta grátis em github.com (pode ser com e-mail pessoal).
+  - Clique em "+" > "New repository". Nome: efetivo. Marque "Public". Clique "Create repository".
+  - Na página do repositório: "uploading an existing file" (ou Add file > Upload files).
+    Arraste todos os arquivos desta pasta e clique "Commit changes".
+  - Vá em Settings > Pages. Em "Branch" escolha "main" e "/ (root)". Clique Save.
+  - Em 1 ou 2 minutos aparece o endereço: https://SEU-USUARIO.github.io/efetivo/
+
+2) INSTALAR NO IPHONE
+  - Abra esse endereço no Safari.
+  - Compartilhar (quadrado com seta) > "Adicionar à Tela de Início" > Adicionar.
+  - Abra pelo ícone "Efetivo" e toque em "Importar Personnel (.xlsx)".
+    Escolha o Personnel escala.xlsx (salve antes no app Arquivos ou iCloud Drive).
+
+3) USO DIÁRIO
+  - Conferência: escolha setor e turno e marque OK ou NOK (com motivo).
+  - Relatório: "Fechar relatório do dia" e depois "Enviar texto (WhatsApp)" ou "Enviar imagem".
+  - Escala mudou? Pessoas > "Importar Personnel novo". As marcações dos dias continuam.
+
+4) CUIDADOS
+  - Os dados ficam só no iPhone. Use Pessoas > "Fazer backup" de vez em quando
+    e guarde o arquivo no iCloud Drive. Para trocar de celular: "Restaurar backup".
+  - Não apague os dados de sites do Safari, isso apaga as marcações.
+  - Para atualizar o app, basta subir os arquivos novos no mesmo repositório.

@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Efetivo">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#18202a" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Conferência de Efetivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: app de uma coluna — barra fixa no topo (data, setor, turno), lista rolável, abas fixas embaixo */
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0}
+[hidden]{display:none!important}
+:root{
+  --bg:#eef1f4; --card:#ffffff; --fg:#17202b; --muted:#5d6b7a; --line:#d6dce3;
+  --accent:#24508a; --accent-soft:#dfe8f4;
+  --ok:#1d7a46; --ok-soft:#dcf1e4; --nok:#b42d2d; --nok-soft:#f7e0de; --warn:#9a6a0a; --warn-soft:#f6ecd4;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif; --body:"Barlow",system-ui,-apple-system,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141a; --card:#18202a; --fg:#e7ecf2; --muted:#93a1b0; --line:#2a3542;
+  --accent:#7fa8de; --accent-soft:#1d2c40;
+  --ok:#5fcf8d; --ok-soft:#163324; --nok:#f08a84; --nok-soft:#3a1d1d; --warn:#e2b75a; --warn-soft:#3a2f16; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --card:#18202a; --fg:#e7ecf2; --muted:#93a1b0; --line:#2a3542;
+  --accent:#7fa8de; --accent-soft:#1d2c40;
+  --ok:#5fcf8d; --ok-soft:#163324; --nok:#f08a84; --nok-soft:#3a1d1d; --warn:#e2b75a; --warn-soft:#3a2f16; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--card)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border-bottom:1px solid var(--line)}
+header .wrap{padding-block:10px 10px;display:grid;gap:8px;max-width:760px;margin:0 auto}
+.toprow{display:flex;align-items:center;gap:10px}
+h1{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.01em;margin:0;flex:1;text-wrap:balance;line-height:1.1}
+h1 small{display:block;font-family:var(--body);font-weight:500;font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+input[type=date]{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 8px;font-family:var(--mono);font-size:13px}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -4px;padding:0 4px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--card)}
+.tally{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.t{border-radius:8px;padding:6px 10px;display:flex;align-items:baseline;justify-content:space-between;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.t b{font-family:var(--display);font-size:22px;font-variant-numeric:tabular-nums;letter-spacing:0}
+.t.ok{background:var(--ok-soft);color:var(--ok)} .t.nok{background:var(--nok-soft);color:var(--nok)} .t.pend{background:var(--bg);color:var(--muted)}
+.bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+main{max-width:760px;margin:0 auto;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+main .wrap{padding-block:12px;display:grid;gap:12px}
+.search{display:flex;gap:8px}
+.search input{flex:1;min-width:0;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 12px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:9px 12px;font-weight:600;font-size:14px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--card)}
+.btn.okb{background:var(--ok);border-color:var(--ok);color:var(--card)}
+.btn.danger{color:var(--nok);border-color:var(--nok)}
+.group h2{font-family:var(--display);font-weight:600;font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:4px 2px 6px;display:flex;justify-content:space-between}
+.group h2 span{font-family:var(--mono);font-size:12px;letter-spacing:0}
+.list{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line);border-left:4px solid transparent}
+.row:first-child{border-top:0}
+.row.s-OK{border-left-color:var(--ok)} .row.s-NOK{border-left-color:var(--nok);background:var(--nok-soft)}
+.who{min-width:0}
+.name{font-weight:600;font-size:14.5px;line-height:1.25;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin-top:3px;font-size:12px;color:var(--muted)}
+.mat{font-family:var(--mono);font-size:12px}
+.tag{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:1px 6px;border-radius:4px;background:var(--bg);color:var(--muted)}
+.tag.fe{background:var(--warn-soft);color:var(--warn)} .tag.af{background:var(--nok-soft);color:var(--nok)} .tag.mo{background:var(--nok);color:var(--card)}
+.tag.code{background:var(--accent-soft);color:var(--accent)}
+.okn{display:flex;gap:6px}
+.okn button{width:54px;height:40px;border-radius:9px;border:1.5px solid var(--line);background:var(--card);font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.04em;color:var(--muted)}
+.okn .o[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:var(--card)}
+.okn .n[aria-pressed="true"]{background:var(--nok);border-color:var(--nok);color:var(--card)}
+.reason{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;padding-top:4px}
+.reason button{border:1px solid var(--nok);color:var(--nok);background:var(--card);border-radius:999px;padding:4px 10px;font-size:13px;font-weight:600}
+.reason button[aria-pressed="true"]{background:var(--nok);color:var(--card)}
+.reason input{flex:1 1 160px;min-width:0;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--card)}
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:24px 16px;text-align:center;color:var(--muted);line-height:1.5}
+.empty b{display:block;color:var(--fg);font-family:var(--display);font-size:19px;margin-bottom:4px}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+nav .in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
+nav button{border:0;background:none;padding:10px 0 12px;font-weight:600;font-size:12.5px;color:var(--muted);display:grid;justify-items:center;gap:3px}
+nav button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8}
+nav button[aria-current="page"]{color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:13.5px}
+th,td{padding:8px 10px;text-align:right;border-top:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+thead th{border-top:0;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+tr.sub td{font-weight:700;background:var(--bg)}
+td.ok{color:var(--ok);font-weight:600} td.nok{color:var(--nok);font-weight:600}
+.tablebox{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.note{font-size:12.5px;color:var(--muted);line-height:1.45}
+.sheet{position:fixed;inset:0;z-index:20;background:rgb(0 0 0 / .45);display:flex;align-items:flex-end;justify-content:center}
+.sheet .panel{background:var(--card);width:100%;max-width:560px;border-radius:16px 16px 0 0;max-height:90%;overflow:auto;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:grid;gap:10px}
+.panel h3{font-family:var(--display);font-size:21px;margin:0}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form label{display:grid;gap:4px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;min-width:0}
+.form label.full{grid-column:1/-1}
+.form input,.form select{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;font-size:15px;text-transform:none;letter-spacing:0;color:var(--fg);min-width:0;width:100%;box-sizing:border-box}
+.checks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:14px;font-size:14px}
+.checks label{display:flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;color:var(--fg);font-weight:500}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:10px;font-size:14px;font-weight:600;z-index:30}
+.confirm{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:var(--accent-soft);border-radius:10px;padding:8px 10px;font-size:14px}
+.pctline{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);font-weight:500}
+.pctline b{font-family:var(--display);font-size:17px;color:var(--fg);font-variant-numeric:tabular-nums}
+.rep{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:14px}
+.rep-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.rep-head h2{font-family:var(--display);font-size:24px;margin:0;line-height:1.1}
+.rep-head p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.status{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:4px 8px;border-radius:6px;background:var(--bg);color:var(--muted);white-space:nowrap}
+.status.pub{background:var(--ok-soft);color:var(--ok)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.kpi{background:var(--bg);border-radius:10px;padding:10px 12px}
+.kpi span{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.kpi b{font-family:var(--display);font-size:34px;line-height:1.05;font-variant-numeric:tabular-nums}
+.kpi small{display:block;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sbars{display:grid;gap:10px}
+.sbar .lab{display:flex;flex-direction:column;gap:1px;font-size:14px;font-weight:600;margin-bottom:5px;font-variant-numeric:tabular-nums}
+.sbar .lab span{color:var(--muted);font-weight:500;font-size:12.5px}
+.sbar .bar{height:8px;border-radius:4px}
+.pctc{font-variant-numeric:tabular-nums;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.row{transition:background .15s}}
+</style>
+</head>
+<body>
+<input type="file" id="arqInput" accept=".xlsx,.xlsm,.xls,.json,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" hidden>
+<header><div class="wrap">
+  <div class="toprow">
+    <h1><small>Manufatura · Personnel</small>Conferência de Efetivo</h1>
+    <input type="date" id="dia" aria-label="Data da conferência">
+  </div>
+  <div class="chips" id="fSetor" role="group" aria-label="Setor"></div>
+  <div class="chips" id="fTurno" role="group" aria-label="Turno"></div>
+  <div class="tally" aria-live="polite">
+    <div class="t ok">OK <b id="nOk">0</b></div>
+    <div class="t nok">NOK <b id="nNok">0</b></div>
+    <div class="t pend">Faltam <b id="nPend">0</b></div>
+  </div>
+  <div class="bar"><i id="bOk" style="background:var(--ok);width:0"></i><i id="bNok" style="background:var(--nok);width:0"></i></div>
+  <div class="pctline"><span><b id="pConf">0%</b> conferido</span><span><b id="pPres">–</b> presença</span></div>
+</div></header>
+
+<main>
+  <section id="vConf" class="wrap"></section>
+  <section id="vRes" class="wrap" hidden></section>
+  <section id="vPes" class="wrap" hidden></section>
+</main>
+
+<nav><div class="in">
+  <button id="tabConf" aria-current="page"><svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></svg>Conferência</button>
+  <button id="tabRes"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>Relatório</button>
+  <button id="tabPes"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>Pessoas</button>
+</div></nav>
+
+<div id="sheet" class="sheet" hidden></div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="xlsx.full.min.js"></script>
+<script src="parser.js"></script>
+<script>
+(function(){
+const SETORES=["Moldagem","Offset","Blow Molding","Sorter"];
+const TURNOS=["A/D","B/E","C/F","ADM"];
+const FUNCOES=["Líder","Auxiliar Operacional","Scrap man","Abastecimento","Conferência Scrap","Balança / Transf. Sorter","Operador","Embalador","Supervisor","Administrativo","Afastado"];
+const MOTIVOS=["Falta","Atestado","Atraso","Férias","Afastado","Outro setor","Outro"];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const hoje=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)};
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+let db=null, downloads=null, base=null, baseLoaded=false, dayData={}, dayExists=false, dayUnsub=null;
+let fSetor=ls.get("cp_setor","Moldagem"), fTurno=ls.get("cp_turno","Todos"), q="", tab="conf", openReason=null, confirmAll=false, pq="";
+let writeChain=Promise.resolve(), readOnly=false;
+const dia=$("#dia"); dia.value=hoje();
+
+function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>el.hidden=true,2200)}
+
+function pessoas(){return base?Object.values(base.pessoas||{}).filter(p=>p&&p.ativo!==false):[]}
+function filtradas(){
+  const qq=q.trim().toLowerCase();
+  return pessoas().filter(p=>(fSetor==="Todos"||p.setor===fSetor)&&(fTurno==="Todos"||p.turno===fTurno)&&(!qq||p.nome.toLowerCase().includes(qq)||String(p.mat).includes(qq)))
+    .sort((a,b)=>FUNCOES.indexOf(a.funcao)-FUNCOES.indexOf(b.funcao)||a.nome.localeCompare(b.nome,"pt"));
+}
+const pct=(a,b)=>b?Math.round(a/b*100)+"%":"0%";
+const pctN=(a,b)=>b?Math.round(a/b*100):0;
+const dataBR=d=>d.split("-").reverse().join("/");
+const mark=mat=>{const m=(dayData.m||{})[mat];return m&&m.s?m:null};
+
+function chips(){
+  $("#fSetor").innerHTML=["Todos",...SETORES].map(s=>`<button class="chip" aria-pressed="${s===fSetor}" data-s="${esc(s)}">${esc(s)}</button>`).join("");
+  $("#fTurno").innerHTML=["Todos",...TURNOS].map(s=>`<button class="chip" aria-pressed="${s===fTurno}" data-t="${esc(s)}">${s==="Todos"?"Todos os turnos":"Turno "+esc(s)}</button>`).join("");
+}
+function tally(){
+  const l=filtradas(); let ok=0,nok=0; l.forEach(p=>{const m=mark(p.mat); if(m&&m.s==="OK")ok++; else if(m&&m.s==="NOK")nok++;});
+  const pend=l.length-ok-nok, tot=l.length||1;
+  $("#nOk").textContent=ok;$("#nNok").textContent=nok;$("#nPend").textContent=pend;
+  $("#bOk").style.width=(ok/tot*100)+"%";$("#bNok").style.width=(nok/tot*100)+"%";
+  $("#pConf").textContent=pct(ok+nok,l.length);$("#pPres").textContent=ok+nok?pct(ok,ok+nok):"–";
+  return {ok,nok,pend,l};
+}
+
+function emptyState(){
+  if(!baseLoaded) return `<div class="empty"><b>Carregando…</b></div>`;
+  return `<div class="empty"><b>Importe o Personnel para começar</b>Escolha o arquivo <i>Personnel escala.xlsx</i> no iPhone (app Arquivos, iCloud ou anexo salvo do e-mail). Os nomes ficam guardados só neste aparelho.<div class="actions" style="justify-content:center;margin-top:12px"><button class="btn primary" id="importar">Importar Personnel (.xlsx)</button><button class="btn" id="importar2">Restaurar backup</button></div></div>`;
+}
+
+function rowHTML(p){
+  const m=mark(p.mat), s=m?m.s:"";
+  const tags=[p.ferias?'<span class="tag fe">Férias</span>':"",p.afastado?'<span class="tag af">Afastado</span>':"",p.tipo==="Temporário"?'<span class="tag">Temp</span>':"",p.pcd?'<span class="tag">PCD</span>':"",...(p.codigos||[]).map(c=>`<span class="tag code">${esc(c)}</span>`),s==="NOK"&&m.mo?`<span class="tag mo">${esc(m.mo)}</span>`:""].join("");
+  let reason="";
+  if(s==="NOK"&&openReason===p.mat){
+    reason=`<div class="reason">${MOTIVOS.map(x=>`<button data-mo="${esc(x)}" data-mat="${esc(p.mat)}" aria-pressed="${m.mo===x}">${esc(x)}</button>`).join("")}<input id="ob-${esc(p.mat)}" data-ob="${esc(p.mat)}" placeholder="Observação (opcional)" value="${esc(m.ob||"")}"></div>`;
+  }
+  return `<div class="row s-${s}"><div class="who"><div class="name">${esc(p.nome)}</div><div class="meta"><span class="mat">${esc(p.mat)}</span>${fSetor==="Todos"?`<span>${esc(p.setor)}</span>`:""}${fTurno==="Todos"?`<span>${esc(p.turno)}</span>`:""}${tags}</div></div>
+  <div class="okn"><button class="o" data-ok="${esc(p.mat)}" aria-pressed="${s==="OK"}" aria-label="OK ${esc(p.nome)}">OK</button><button class="n" data-nok="${esc(p.mat)}" aria-pressed="${s==="NOK"}" aria-label="NOK ${esc(p.nome)}">NOK</button></div>${reason}</div>`;
+}
+
+function renderConf(){
+  const {pend,l}=tally(); const v=$("#vConf");
+  if(!base||!pessoas().length){v.innerHTML=emptyState();return}
+  let h=`<div class="search"><input id="busca" type="search" placeholder="Buscar nome ou matrícula" value="${esc(q)}" autocomplete="off"></div>`;
+  if(readOnly) h+=`<div class="note">Você tem acesso só de leitura a esta conferência.</div>`;
+  if(pend&&!readOnly){
+    h+= confirmAll?`<div class="confirm">Marcar ${pend} pendente${pend>1?"s":""} como OK?<button class="btn okb" id="allYes">Marcar OK</button><button class="btn" id="allNo">Cancelar</button></div>`
+      :`<div class="actions"><button class="btn" id="allOk">Marcar pendentes como OK (${pend})</button></div>`;
+  }
+  if(!l.length) h+=`<div class="empty"><b>Ninguém neste filtro</b>Troque o setor, o turno ou a busca.</div>`;
+  const groups={}; l.forEach(p=>(groups[p.funcao]=groups[p.funcao]||[]).push(p));
+  Object.keys(groups).forEach(g=>{
+    const ps=groups[g], ok=ps.filter(p=>mark(p.mat)).length;
+    h+=`<div class="group"><h2>${esc(g)}<span>${ok}/${ps.length}</span></h2><div class="list">${ps.map(rowHTML).join("")}</div></div>`;
+  });
+  const focused=document.activeElement&&document.activeElement.id; const sel=focused==="busca"?document.activeElement.selectionStart:null;
+  v.innerHTML=h;
+  if(focused==="busca"){const b=$("#busca");b.focus();try{b.setSelectionRange(sel,sel)}catch(e){}}
+  else if(focused&&focused.startsWith("ob-")){const b=document.getElementById(focused);if(b){b.focus();const n=b.value.length;b.setSelectionRange(n,n)}}
+}
+
+function contar(list){let ok=0,nok=0;list.forEach(p=>{const m=mark(p.mat);if(m&&m.s==="OK")ok++;else if(m&&m.s==="NOK")nok++;});return{t:list.length,ok,nok,pend:list.length-ok-nok}}
+function statsSetor(){
+  return SETORES.map(s=>{const ps=pessoas().filter(p=>p.setor===s);return {s,c:contar(ps),turnos:TURNOS.map(tu=>({tu,c:contar(ps.filter(p=>p.turno===tu))})).filter(x=>x.c.t)}}).filter(x=>x.c.t);
+}
+function nokList(){return pessoas().filter(p=>mark(p.mat)?.s==="NOK").sort((a,b)=>SETORES.indexOf(a.setor)-SETORES.indexOf(b.setor)||a.turno.localeCompare(b.turno)||a.nome.localeCompare(b.nome))}
+function motivos(noks){const o={};noks.forEach(p=>{const k=mark(p.mat).mo||"Sem motivo";o[k]=(o[k]||0)+1});return Object.entries(o).sort((a,b)=>b[1]-a[1])}
+function textoResumo(){
+  const all=contar(pessoas()), noks=nokList();
+  let t=`*Relatório de efetivo — ${dataBR(dia.value)}*\n`;
+  t+=`Conferido: ${pct(all.ok+all.nok,all.t)} (${all.ok+all.nok}/${all.t})\nPresença: ${all.ok+all.nok?pct(all.ok,all.ok+all.nok):"–"} · ${all.ok} OK · ${all.nok} NOK\n`;
+  statsSetor().forEach(({s,c,turnos})=>{
+    t+=`\n*${s}* — ${c.ok+c.nok?pct(c.ok,c.ok+c.nok):"–"} presença · ${c.ok} OK · ${c.nok} NOK${c.pend?` · ${c.pend} sem marcar`:""}`;
+    turnos.forEach(({tu,c:k})=>{t+=`\n  Turno ${tu}: ${k.ok}/${k.t} OK (${pct(k.ok,k.t)})${k.nok?` · ${k.nok} NOK`:""}`});
+  });
+  if(noks.length){
+    t+=`\n\n*Motivos:* ${motivos(noks).map(([k,n])=>`${k} ${n}`).join(" · ")}\n\n*NOK do dia*`;
+    noks.forEach(p=>{const m=mark(p.mat);t+=`\n• ${p.nome} (${p.mat}) — ${p.setor} T${p.turno} — ${m.mo||"NOK"}${m.ob?": "+m.ob:""}`});
+  }
+  return t;
+}
+function renderRes(){
+  tally(); const v=$("#vRes");
+  if(!base||!pessoas().length){v.innerHTML=emptyState();return}
+  const all=contar(pessoas()), st=statsSetor(), noks=nokList(), mot=motivos(noks), pub=dayData.publicado;
+  let rows="";
+  st.forEach(({s,c,turnos})=>{
+    rows+=`<tr class="sub"><td>${esc(s)}</td><td>${c.t}</td><td class="ok">${c.ok}</td><td class="nok">${c.nok}</td><td>${c.pend}</td><td>${pct(c.ok+c.nok,c.t)}</td><td>${c.ok+c.nok?pct(c.ok,c.ok+c.nok):"–"}</td></tr>`;
+    turnos.forEach(({tu,c:k})=>{rows+=`<tr><td>Turno ${tu}</td><td>${k.t}</td><td class="ok">${k.ok}</td><td class="nok">${k.nok}</td><td>${k.pend}</td><td class="pctc">${pct(k.ok+k.nok,k.t)}</td><td class="pctc">${k.ok+k.nok?pct(k.ok,k.ok+k.nok):"–"}</td></tr>`});
+  });
+  rows+=`<tr class="sub"><td>Total</td><td>${all.t}</td><td class="ok">${all.ok}</td><td class="nok">${all.nok}</td><td>${all.pend}</td><td>${pct(all.ok+all.nok,all.t)}</td><td>${all.ok+all.nok?pct(all.ok,all.ok+all.nok):"–"}</td></tr>`;
+  const pubTxt=pub&&pub.em?`Fechado ${new Date(pub.em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}`:"Em aberto";
+  let h=`<div class="rep">
+    <div class="rep-head"><div><h2>Relatório de efetivo</h2><p>${dataBR(dia.value)} · Moldagem, Offset, Blow Molding e Sorter</p></div><span class="status${pub?" pub":""}">${pubTxt}</span></div>
+    <div class="kpis">
+      <div class="kpi"><span>Conferido</span><b>${pct(all.ok+all.nok,all.t)}</b><small>${all.ok+all.nok} de ${all.t} pessoas</small></div>
+      <div class="kpi"><span>Presença</span><b style="color:var(--ok)">${all.ok+all.nok?pct(all.ok,all.ok+all.nok):"–"}</b><small>${all.ok} OK · ${all.nok} NOK</small></div>
+    </div>
+    <div class="sbars">${st.map(({s,c})=>`<div class="sbar"><div class="lab">${esc(s)}<span>${c.ok} OK · ${c.nok} NOK · ${c.pend} faltam — ${pct(c.ok+c.nok,c.t)} conferido</span></div><div class="bar"><i style="background:var(--ok);width:${c.t?c.ok/c.t*100:0}%"></i><i style="background:var(--nok);width:${c.t?c.nok/c.t*100:0}%"></i></div></div>`).join("")}</div>
+    ${mot.length?`<div class="meta">${mot.map(([k,n])=>`<span class="tag mo">${esc(k)} ${n}</span>`).join("")}</div>`:""}
+  </div>`;
+  h+=`<div class="actions">${readOnly?"":`<button class="btn primary" id="publicar">${pub?"Atualizar fechamento":"Fechar relatório do dia"}</button>`}<button class="btn" id="copiar">Enviar texto (WhatsApp)</button><button class="btn" id="png">Enviar imagem</button><button class="btn" id="csv">Baixar CSV</button></div>`;
+  if(all.pend) h+=`<div class="note">Ainda faltam ${all.pend} pessoas sem marcação. Dá para fechar assim mesmo e atualizar depois.</div>`;
+  h+=`<div class="tablebox"><table><thead><tr><th>Setor / turno</th><th>Pessoas</th><th>OK</th><th>NOK</th><th>Faltam</th><th>% Conf.</th><th>% Pres.</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  h+=`<div class="group"><h2>NOK do dia<span>${noks.length}</span></h2>`;
+  h+= noks.length?`<div class="list">${noks.map(p=>{const m=mark(p.mat);return `<div class="row s-NOK"><div class="who"><div class="name">${esc(p.nome)}</div><div class="meta"><span class="mat">${esc(p.mat)}</span><span>${esc(p.setor)} · ${esc(p.turno)}</span><span class="tag mo">${esc(m.mo||"Sem motivo")}</span>${m.ob?`<span>${esc(m.ob)}</span>`:""}</div></div></div>`}).join("")}</div>`:`<div class="empty">Nenhum NOK marcado neste dia.</div>`;
+  h+=`</div><textarea id="resumoTxt" readonly hidden></textarea>`;
+  v.innerHTML=h;
+}
+async function publicar(){
+  if(!db||readOnly) return;
+  const all=contar(pessoas()), noks=nokList();
+  const pub={em:now(),total:all.t,ok:all.ok,nok:all.nok,pend:all.pend,pctConf:pctN(all.ok+all.nok,all.t),pctPres:pctN(all.ok,all.ok+all.nok),
+    setores:Object.fromEntries(statsSetor().map(({s,c})=>[s,{t:c.t,ok:c.ok,nok:c.nok,pend:c.pend}])),motivos:Object.fromEntries(motivos(noks))};
+  dayData={...dayData,publicado:pub}; render();
+  const ref=db.doc("dias/"+dia.value), d=dia.value;
+  writeChain=writeChain.then(async()=>{
+    try{const snap=await ref.get(); if(snap.exists) await ref.update({publicado:pub}); else await ref.set({data:d,m:{},publicado:pub}); dayExists=true; toast("Relatório fechado");}
+    catch(e){toast("Não salvou. Tente de novo")}
+  });
+  try{history.replaceState(null,"","#relatorio")}catch(e){}
+}
+async function gerarPNG(){
+  try{await document.fonts.ready}catch(e){}
+  const all=contar(pessoas()), st=statsSetor(), noks=nokList(), mot=motivos(noks);
+  const W=1080, pad=64, rowH=46, noksShown=noks.slice(0,30);
+  const H=pad*2+260+st.length*120+(mot.length?70:0)+(noks.length?80+noksShown.length*rowH+(noks.length>30?40:0):60);
+  const cv=document.createElement("canvas"); cv.width=W; cv.height=H; const x=cv.getContext("2d");
+  const C={bg:"#ffffff",fg:"#17202b",mu:"#5d6b7a",li:"#d6dce3",ok:"#1d7a46",nok:"#b42d2d",acc:"#24508a",soft:"#eef1f4"};
+  x.fillStyle=C.bg;x.fillRect(0,0,W,H);
+  x.fillStyle=C.acc;x.fillRect(0,0,W,10);
+  let y=pad+20;
+  x.fillStyle=C.mu;x.font="600 24px Barlow, sans-serif";x.fillText("MANUFATURA · PERSONNEL",pad,y);
+  y+=56;x.fillStyle=C.fg;x.font="700 56px 'Barlow Condensed', sans-serif";x.fillText("Relatório de efetivo — "+dataBR(dia.value),pad,y);
+  y+=36;
+  const kpi=(kx,label,val,sub,col)=>{x.fillStyle=C.soft;x.fillRect(kx,y,(W-pad*2-24)/2,140);x.fillStyle=C.mu;x.font="600 22px Barlow, sans-serif";x.fillText(label,kx+24,y+40);x.fillStyle=col;x.font="700 64px 'Barlow Condensed', sans-serif";x.fillText(val,kx+24,y+104);x.fillStyle=C.mu;x.font="500 22px Barlow, sans-serif";x.fillText(sub,kx+24,y+130)};
+  kpi(pad,"CONFERIDO",pct(all.ok+all.nok,all.t),`${all.ok+all.nok} de ${all.t} pessoas`,C.fg);
+  kpi(pad+(W-pad*2-24)/2+24,"PRESENÇA",all.ok+all.nok?pct(all.ok,all.ok+all.nok):"–",`${all.ok} OK · ${all.nok} NOK`,C.ok);
+  y+=190;
+  st.forEach(({s,c,turnos})=>{
+    x.fillStyle=C.fg;x.font="700 34px 'Barlow Condensed', sans-serif";x.fillText(s,pad,y);
+    x.fillStyle=C.mu;x.font="500 22px Barlow, sans-serif";x.textAlign="right";x.fillText(`${c.ok} OK · ${c.nok} NOK · ${c.pend} faltam · ${c.ok+c.nok?pct(c.ok,c.ok+c.nok):"–"} presença`,W-pad,y);x.textAlign="left";
+    const bw=W-pad*2;x.fillStyle=C.li;x.fillRect(pad,y+16,bw,16);x.fillStyle=C.ok;x.fillRect(pad,y+16,c.t?bw*c.ok/c.t:0,16);x.fillStyle=C.nok;x.fillRect(pad+(c.t?bw*c.ok/c.t:0),y+16,c.t?bw*c.nok/c.t:0,16);
+    x.fillStyle=C.mu;x.font="500 20px 'IBM Plex Mono', monospace";x.fillText(turnos.map(({tu,c:k})=>`${tu}: ${k.ok}/${k.t}`).join("    "),pad,y+64);
+    y+=120;
+  });
+  if(mot.length){x.fillStyle=C.nok;x.font="600 24px Barlow, sans-serif";x.fillText("Motivos: "+mot.map(([k,n])=>`${k} ${n}`).join(" · "),pad,y);y+=70}
+  if(noks.length){
+    x.fillStyle=C.fg;x.font="700 34px 'Barlow Condensed', sans-serif";x.fillText(`NOK do dia (${noks.length})`,pad,y);y+=24;
+    noksShown.forEach((p,i)=>{const m=mark(p.mat);y+=rowH;if(i%2===0){x.fillStyle=C.soft;x.fillRect(pad,y-32,W-pad*2,rowH)}
+      x.fillStyle=C.fg;x.font="600 22px Barlow, sans-serif";let nm=p.nome;while(x.measureText(nm).width>520&&nm.length>4)nm=nm.slice(0,-2);if(nm!==p.nome)nm+="…";x.fillText(nm,pad+12,y);
+      x.fillStyle=C.mu;x.font="500 20px Barlow, sans-serif";x.fillText(`${p.setor} · ${p.turno}`,pad+560,y);
+      x.fillStyle=C.nok;x.font="600 20px Barlow, sans-serif";x.textAlign="right";x.fillText(m.mo||"NOK",W-pad-12,y);x.textAlign="left"});
+    if(noks.length>30){y+=40;x.fillStyle=C.mu;x.font="500 20px Barlow, sans-serif";x.fillText(`+ ${noks.length-30} no relatório completo`,pad,y)}
+  } else {y+=10;x.fillStyle=C.ok;x.font="600 26px Barlow, sans-serif";x.fillText("Nenhum NOK marcado.",pad,y)}
+  const blob=await new Promise(r=>cv.toBlob(r,"image/png"));
+  await compartilharArquivo(blob,`relatorio_efetivo_${dia.value}.png`,"Relatório de efetivo "+dataBR(dia.value));
+}
+
+function renderPes(){
+  const v=$("#vPes");
+  const qq=pq.trim().toLowerCase();
+  const all=base?Object.values(base.pessoas||{}).filter(Boolean):[];
+  const l=all.filter(p=>(fSetor==="Todos"||p.setor===fSetor)&&(fTurno==="Todos"||p.turno===fTurno)&&(!qq||p.nome.toLowerCase().includes(qq)||String(p.mat).includes(qq))).sort((a,b)=>a.nome.localeCompare(b.nome,"pt"));
+  let h=`<div class="search"><input id="pbusca" type="search" placeholder="Buscar na base" value="${esc(pq)}" autocomplete="off">${readOnly?"":'<button class="btn primary" id="novo">+ Pessoa</button>'}</div>
+  <div class="note">${all.filter(p=>p.ativo!==false).length} pessoas ativas${base&&base.importado?` · Personnel importado em ${new Date(base.importado).toLocaleDateString("pt-BR")}`:""}. Toque em alguém para editar setor, turno, função ou situação.</div>
+  <div class="actions"><button class="btn" id="importar">Importar Personnel novo</button><button class="btn" id="backup">Fazer backup</button><button class="btn" id="importar2">Restaurar backup</button></div>
+  <div class="note">Importar de novo atualiza a base e mantém as marcações dos dias. Faça backup de vez em quando: os dados ficam só neste iPhone.</div>`;
+  h+= l.length?`<div class="list">${l.map(p=>`<button class="row" style="width:100%;text-align:left;border-right:0;border-bottom:0;background:var(--card)" data-edit="${esc(p.mat)}"><div class="who"><div class="name">${esc(p.nome)}${p.ativo===false?' <span class="tag">Inativo</span>':""}</div><div class="meta"><span class="mat">${esc(p.mat)}</span><span>${esc(p.setor)} · ${esc(p.turno)} · ${esc(p.funcao)}</span>${p.ferias?'<span class="tag fe">Férias</span>':""}${p.afastado?'<span class="tag af">Afastado</span>':""}</div></div><span style="color:var(--muted)">›</span></button>`).join("")}</div>`:(base?`<div class="empty"><b>Ninguém encontrado</b>Ajuste o filtro ou cadastre uma pessoa.</div>`:emptyState());
+  const focused=document.activeElement&&document.activeElement.id==="pbusca";
+  v.innerHTML=h; if(focused){const b=$("#pbusca");b.focus();const n=b.value.length;b.setSelectionRange(n,n)}
+}
+
+function render(){ if(tab==="conf")renderConf(); else if(tab==="res")renderRes(); else renderPes(); tally(); }
+
+function setTab(t){tab=t;["conf","res","pes"].forEach(x=>{$("#v"+{conf:"Conf",res:"Res",pes:"Pes"}[x]).hidden=x!==t;$("#tab"+{conf:"Conf",res:"Res",pes:"Pes"}[x]).setAttribute("aria-current",x===t?"page":"false")});window.scrollTo(0,0);try{history.replaceState(null,"",t==="res"?"#relatorio":t==="pes"?"#pessoas":location.pathname+location.search)}catch(e){}render()}
+$("#tabConf").onclick=()=>setTab("conf");$("#tabRes").onclick=()=>setTab("res");$("#tabPes").onclick=()=>setTab("pes");
+
+/* ---------- gravação ---------- */
+function writeMarks(patch){
+  // patch: {mat: {s,mo,ob,t} | null}
+  dayData={...dayData,m:{...(dayData.m||{}),...patch}}; render();
+  if(!db||readOnly) return;
+  const ref=db.doc("dias/"+dia.value), d=dia.value;
+  writeChain=writeChain.then(async()=>{
+    try{
+      if(!dayExists){ const snap=await ref.get(); dayExists=snap.exists; }
+      if(dayExists) await ref.update({m:patch});
+      else { const cur=(await ref.get()).data()||{}; await ref.set({data:d,m:{...(cur.m||{}),...patch}}); dayExists=true; }
+    }catch(e){
+      if(e&&e.code==="invalid_argument"){readOnly=true;toast("Sem permissão para salvar");render()}
+      else if(e&&e.code==="quota_exceeded") toast("Limite de dados atingido");
+      else toast("Não salvou. Verifique a conexão e marque de novo");
+    }
+  });
+}
+const now=()=>new Date().toISOString();
+
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  if(b.dataset.s){fSetor=b.dataset.s;ls.set("cp_setor",fSetor);chips();render();return}
+  if(b.dataset.t){fTurno=b.dataset.t;ls.set("cp_turno",fTurno);chips();render();return}
+  if(readOnly&&(b.dataset.ok||b.dataset.nok||b.dataset.mo)) return;
+  if(b.dataset.ok){const m=mark(b.dataset.ok);openReason=null;writeMarks({[b.dataset.ok]:m&&m.s==="OK"?null:{s:"OK",t:now()}});return}
+  if(b.dataset.nok){const mat=b.dataset.nok,m=mark(mat);
+    if(m&&m.s==="NOK"){ if(openReason===mat){openReason=null;writeMarks({[mat]:null})} else {openReason=mat;render()} }
+    else {openReason=mat;writeMarks({[mat]:{s:"NOK",mo:"Falta",ob:"",t:now()}})}
+    return}
+  if(b.dataset.mo){const mat=b.dataset.mat,m=mark(mat);writeMarks({[mat]:{...m,mo:b.dataset.mo,t:now()}});return}
+  if(b.id==="allOk"){confirmAll=true;render();return}
+  if(b.id==="allNo"){confirmAll=false;render();return}
+  if(b.id==="allYes"){confirmAll=false;const patch={};filtradas().forEach(p=>{if(!mark(p.mat))patch[p.mat]={s:"OK",t:now()}});writeMarks(patch);toast(Object.keys(patch).length+" marcados como OK");return}
+  if(b.id==="copiar"){compartilharTexto(textoResumo());return}
+  if(b.id==="importar"||b.id==="importar2"){$("#arqInput").click();return}
+  if(b.id==="backup"){backup();return}
+  if(b.id==="csv"){baixarCSV();return}
+  if(b.id==="png"){gerarPNG();return}
+  if(b.id==="publicar"){publicar();return}
+  if(b.id==="novo"){editar(null);return}
+  if(b.dataset.edit){editar(b.dataset.edit);return}
+  if(b.id==="fechar"){fecharSheet();return}
+  if(b.id==="salvar"){salvarPessoa();return}
+  if(b.id==="inativar"){salvarPessoa(true);return}
+});
+let obTimer=null;
+document.addEventListener("input",e=>{
+  if(e.target.id==="busca"){q=e.target.value;renderConf();return}
+  if(e.target.id==="pbusca"){pq=e.target.value;renderPes();return}
+  if(e.target.dataset.ob){const mat=e.target.dataset.ob,val=e.target.value;clearTimeout(obTimer);obTimer=setTimeout(()=>{const m=mark(mat);if(m)writeMarks({[mat]:{...m,ob:val}})},700)}
+});
+dia.addEventListener("change",()=>{if(!dia.value)dia.value=hoje();openReason=null;subDay()});
+
+async function baixarCSV(){
+  const linhas=[["Data","Matricula","Nome","Setor","Turno","Funcao","Status","Motivo","Observacao"]];
+  pessoas().sort((a,b)=>a.setor.localeCompare(b.setor)||a.turno.localeCompare(b.turno)||a.nome.localeCompare(b.nome)).forEach(p=>{const m=mark(p.mat);linhas.push([dia.value,p.mat,p.nome,p.setor,p.turno,p.funcao,m?m.s:"",m&&m.s==="NOK"?m.mo||"":"",m&&m.ob||""])});
+  const csv="﻿"+linhas.map(r=>r.map(c=>/[;"\n]/.test(c)?`"${String(c).replace(/"/g,'""')}"`:c).join(";")).join("\r\n");
+  try{await downloads.save({filename:`conferencia_${dia.value}.csv`,data:new Blob([csv],{type:"text/csv"})})}catch(e){toast("Download cancelado")}
+}
+
+/* ---------- cadastro ---------- */
+let editMat=null;
+function editar(mat){
+  editMat=mat; const p=mat?base.pessoas[mat]:{mat:"",nome:"",setor:fSetor==="Todos"?"Moldagem":fSetor,turno:fTurno==="Todos"?"A/D":fTurno,funcao:"Operador",tipo:"Efetivo",pcd:false,ferias:false,afastado:false,codigos:[],ativo:true};
+  const opt=(arr,v)=>arr.map(x=>`<option${x===v?" selected":""}>${esc(x)}</option>`).join("");
+  $("#sheet").innerHTML=`<div class="panel" role="dialog" aria-modal="true" aria-label="Pessoa"><h3>${mat?"Editar pessoa":"Nova pessoa"}</h3>
+  <div class="form">
+    <label>Matrícula<input id="fmat" value="${esc(p.mat)}" ${mat?"readonly":""} inputmode="numeric"></label>
+    <label>Tipo<select id="ftipo">${opt(["Efetivo","Temporário"],p.tipo)}</select></label>
+    <label class="full">Nome<input id="fnome" value="${esc(p.nome)}" autocapitalize="characters"></label>
+    <label>Setor<select id="fsetor">${opt(SETORES,p.setor)}</select></label>
+    <label>Turno<select id="fturno">${opt(TURNOS,p.turno)}</select></label>
+    <label class="full">Função<select id="ffuncao">${opt(FUNCOES,p.funcao)}</select></label>
+    <label class="full">Habilitações (ex.: L, AB, CS)<input id="fcod" value="${esc((p.codigos||[]).join(", "))}"></label>
+    <div class="checks"><label><input type="checkbox" id="fferias" ${p.ferias?"checked":""}> Férias</label><label><input type="checkbox" id="fafast" ${p.afastado?"checked":""}> Afastado</label><label><input type="checkbox" id="fpcd" ${p.pcd?"checked":""}> PCD</label></div>
+  </div>
+  <div id="ferr" class="note" style="color:var(--nok)"></div>
+  <div class="actions">${readOnly?"":'<button class="btn primary" id="salvar">Salvar</button>'}<button class="btn" id="fechar">Fechar</button>${mat&&!readOnly?(p.ativo===false?'<button class="btn" id="inativar" data-reativar="1">Reativar</button>':'<button class="btn danger" id="inativar">Remover da conferência</button>'):""}</div></div>`;
+  $("#sheet").hidden=false;
+}
+function fecharSheet(){$("#sheet").hidden=true;$("#sheet").innerHTML=""}
+$("#sheet").addEventListener("click",e=>{if(e.target.id==="sheet")fecharSheet()});
+async function salvarPessoa(toggle){
+  const mat=($("#fmat").value||"").trim(), nome=($("#fnome").value||"").trim().toUpperCase();
+  if(!mat||!nome){$("#ferr").textContent="Preencha matrícula e nome.";return}
+  if(!editMat&&base&&base.pessoas&&base.pessoas[mat]){$("#ferr").textContent="Essa matrícula já está na base.";return}
+  const old=editMat?base.pessoas[editMat]:{};
+  let ativo=old.ativo!==false; if(toggle) ativo=!ativo;
+  const p={mat,nome,setor:$("#fsetor").value,turno:$("#fturno").value,funcao:$("#ffuncao").value,tipo:$("#ftipo").value,pcd:$("#fpcd").checked,ferias:$("#fferias").checked,afastado:$("#fafast").checked,codigos:$("#fcod").value.split(/[,\s]+/).map(s=>s.trim().toUpperCase()).filter(Boolean),ativo,manual:editMat?!!old.manual:true};
+  base={...(base||{}),pessoas:{...((base&&base.pessoas)||{}),[mat]:p}}; fecharSheet(); render();
+  try{
+    const ref=db.doc("config/base"); const snap=await ref.get();
+    if(snap.exists) await ref.update({pessoas:{[mat]:p},atualizado:now()}); else await ref.set({pessoas:{[mat]:p},atualizado:now()});
+    toast(toggle?(ativo?"Pessoa reativada":"Removida da conferência"):"Salvo");
+  }catch(e){toast(e&&e.code==="invalid_argument"?"Sem permissão para salvar":"Não salvou. Tente de novo")}
+}
+
+/* ---------- armazenamento no aparelho ---------- */
+const PFX="efetivo:";
+const LocalDB=(()=>{
+  const subs={};
+  const key=p=>PFX+p;
+  const read=p=>{try{const v=localStorage.getItem(key(p));return v?JSON.parse(v):null}catch(e){return null}};
+  const write=(p,v)=>{try{localStorage.setItem(key(p),JSON.stringify(v))}catch(e){throw {code:"quota_exceeded"}}(subs[p]||[]).forEach(f=>f(snap(p)))};
+  const snap=p=>{const v=read(p);return {exists:!!v,data:()=>v||undefined}};
+  const merge=(a,b)=>{const o={...(a||{})};for(const k in b){o[k]=b[k]&&typeof b[k]==="object"&&!Array.isArray(b[k])&&o[k]&&typeof o[k]==="object"&&!Array.isArray(o[k])?merge(o[k],b[k]):b[k]}return o};
+  return {doc(p){return {
+    get:async()=>snap(p),
+    set:async v=>write(p,v),
+    update:async v=>write(p,merge(read(p),v)),
+    onSnapshot(f){(subs[p]=subs[p]||[]).push(f);setTimeout(()=>f(snap(p)),0);return()=>{subs[p]=(subs[p]||[]).filter(x=>x!==f)}}
+  }},
+  allDays(){const o={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith(PFX+"dias/"))o[k.slice(PFX.length+5)]=JSON.parse(localStorage.getItem(k))}}catch(e){}return o},
+  rawSet(p,v){write(p,v)}};
+})();
+function salvarArquivo(blob,nome){
+  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=nome;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+const LocalDownloads={save:async({filename,data})=>salvarArquivo(data,filename)};
+async function compartilharArquivo(blob,nome,titulo){
+  const file=new File([blob],nome,{type:blob.type});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:titulo});return}catch(e){if(e&&e.name==="AbortError")return}}
+  salvarArquivo(blob,nome);
+}
+async function compartilharTexto(t){
+  if(navigator.share){try{await navigator.share({text:t});return}catch(e){if(e&&e.name==="AbortError")return}}
+  try{await navigator.clipboard.writeText(t);toast("Resumo copiado")}catch(e){const ta=$("#resumoTxt");if(ta){ta.hidden=false;ta.value=t;ta.style.cssText="width:100%;min-height:160px;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--card)";ta.select()}toast("Selecione o texto e copie")}
+}
+async function importarPlanilha(file){
+  try{
+    const buf=await file.arrayBuffer();
+    if(/\.json$/i.test(file.name)){
+      const bk=JSON.parse(new TextDecoder().decode(buf));
+      if(!bk||!bk.base||!bk.base.pessoas) throw new Error("Esse arquivo não é um backup do app.");
+      LocalDB.rawSet("config/base",bk.base);
+      Object.entries(bk.dias||{}).forEach(([d,v])=>LocalDB.rawSet("dias/"+d,v));
+      subDay(); toast("Backup restaurado: "+Object.keys(bk.base.pessoas).length+" pessoas"); return;
+    }
+    const wb=XLSX.read(buf,{type:"array"});
+    const r=PersonnelParser.parseWorkbook(wb,XLSX);
+    const n=Object.keys(r.pessoas).length;
+    if(!n) throw new Error("Não achei pessoas nessa planilha. Use o Personnel escala com as abas MOLDAGEM, OFFSET, BLOWMOLDING e SORTER.");
+    // mantém quem foi cadastrado à mão no app e não está na planilha
+    const manuais=Object.values((base&&base.pessoas)||{}).filter(p=>p&&p.manual&&!r.pessoas[p.mat]);
+    manuais.forEach(p=>r.pessoas[p.mat]=p);
+    await LocalDB.doc("config/base").set({pessoas:r.pessoas,importado:now(),arquivo:file.name});
+    toast(n+" pessoas importadas"+(r.faltando.length?" (sem aba "+r.faltando.join(", ")+")":""));
+  }catch(e){toast(e&&e.message?e.message:"Não consegui ler o arquivo")}
+}
+function backup(){
+  const bk={app:"conferencia-efetivo",versao:1,gerado:now(),base:base||null,dias:LocalDB.allDays()};
+  salvarArquivo(new Blob([JSON.stringify(bk)],{type:"application/json"}),`backup_efetivo_${hoje()}.json`);
+}
+document.addEventListener("change",e=>{
+  if(e.target.id==="arqInput"&&e.target.files[0]){importarPlanilha(e.target.files[0]);e.target.value=""}
+});
+
+/* ---------- conexão ---------- */
+function subDay(){
+  if(dayUnsub){dayUnsub();dayUnsub=null}
+  dayData={};dayExists=false;render();
+  if(!db) return;
+  const d=dia.value;
+  dayUnsub=db.doc("dias/"+d).onSnapshot(s=>{if(d!==dia.value)return;dayExists=s.exists;dayData=s.exists?(s.data()||{}):{};render()},()=>{});
+}
+chips(); render();
+const h0=location.hash; if(h0==="#relatorio")setTab("res"); else if(h0==="#pessoas")setTab("pes");
+window.addEventListener("hashchange",()=>{if(location.hash==="#relatorio"&&tab!=="res")setTab("res")});
+db=LocalDB; downloads=LocalDownloads;
+db.doc("config/base").onSnapshot(s=>{baseLoaded=true;base=s.exists?(s.data()||null):null;render()});
+subDay();
+})();
+</script>
+<script>
+if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+</script>
+</body>
+</html>
